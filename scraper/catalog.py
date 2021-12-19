@@ -13,6 +13,7 @@ class CourseCatalog:
     def __init__(self, subject_code: str, course_number: str):
         self.subject_code = subject_code
         self.course_number = course_number
+        self.course = f"{self.subject_code} {self.course_number}"
         self.url = get_url(subject_code, course_number)
         self.page = requests.get(self.url)
         self.content = BeautifulSoup(self.page.content, "html.parser")
@@ -20,16 +21,20 @@ class CourseCatalog:
     def find_credit(self) -> List[float]:
         results = self.content.find("div", class_="searchresult search-courseresult")
         header = results.next_element.text
-        return list(map(float, re.findall(r"\d+\.\d+", header)))
+        credit = list(map(float, re.findall(r"\d+\.\d+", header)))
+
+        return credit
 
     def find_course_description(self) -> str:
-        return self.content.find("p", class_="courseblockdesc").text
+        course_desc = self.content.find("p", class_="courseblockdesc").text.strip()
+        return course_desc
 
     def find_preqs(self) -> Optional[str]:
         prereq_block = self.content.find("b", text="Prerequisites:")
         if not prereq_block:
             return None
-        return prereq_block.next_sibling.strip()
+        preq = prereq_block.next_sibling.strip()
+        return preq
 
 
 if __name__ == "__main__":
