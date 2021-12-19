@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 
-from database import Base
+from .database import Base
 
 
 class Quarter(Base):

@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from app.database import engine
-from cleaner import clean_subjects
+from .cleaner import clean_subjects
 
 BASE_URL = "https://termmasterschedule.drexel.edu/"
 SCHOOL_URL = f"{BASE_URL}webtms_du/collegesSubjects/202115?collCode=CI"
