@@ -1,13 +1,12 @@
 import concurrent.futures
-import os
 import re
 import time
-from os.path import join
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from app.database import engine
 from cleaner import clean_subjects
 
 BASE_URL = "https://termmasterschedule.drexel.edu/"
@@ -33,7 +32,6 @@ def get_school_links(url: str) -> list[str]:
 
 def get_subjects_links(url: str) -> list[str]:
     page = requests.get(url)
-    cookies = page.cookies
 
     soup = BeautifulSoup(page.content, "html.parser")
     subject_anchors = soup.find("table", class_="collegePanel").findAll("a")
@@ -48,10 +46,11 @@ def get_courses(url: str) -> None:
     soup = BeautifulSoup(page.content, "html.parser")
     term_name = soup.find(text=re.compile(r"^Schedule for.*"))
     term_name = term_name[term_name.find("(") + 1: term_name.find(")")]
+    df["term"] = int(term_name)
 
-    file_name = join(os.getcwd(), term_name, f'{url[url.find("courseList") + 11: url.find(";")]}.csv')
-    print(file_name)
-    df.to_csv(path_or_buf=file_name, index=False)
+    df.to_sql("quarters", engine, if_exists="append", index=False)
+    # file_name = join(os.getcwd(), term_name, f'{url[url.find("courseList") + 11: url.find(";")]}.csv')
+    # df.to_csv(path_or_buf=file_name, index=False)
     # return df
 
 
@@ -65,17 +64,26 @@ def save_subjects(school_url: str) -> None:
 def save_subjects_per_school(term_url: str) -> None:
     schools = get_school_links(term_url)
     for school in schools:
-        save_subjects(school)
+        save_subjects(school_url=school)
+
+
+def save_subjects_per_term() -> None:
+    quarters = get_quarter_term_links(BASE_URL)
+    for quarter in quarters:
+        save_subjects_per_school(term_url=quarter)
 
 
 def main():
-    quarters = get_quarter_term_links(BASE_URL)
-
     t0 = time.time()
-    save_subjects_per_school(quarters[0])
+    save_subjects_per_term()
     t1 = time.time()
     print(f"{t1 - t0} seconds to scrape.")
 
 
 if __name__ == "__main__":
     main()
+    # quarter = get_quarter_term_links(BASE_URL)
+    # fall = get_school_links(quarter[0])
+    # ci = get_subjects_links(fall[5])
+    # print(ci)
+    # print(get_courses(ci[0]))
