@@ -1,9 +1,12 @@
-from pprint import pprint
+import concurrent.futures
+import os
+import re
+import time
+from os.path import join
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from requests.cookies import RequestsCookieJar
 
 from cleaner import clean_subjects
 
@@ -28,38 +31,50 @@ def get_school_links(url: str) -> list[str]:
     return [f"{BASE_URL}{a['href']}" for a in school_panel]
 
 
-def get_subjects_links(url: str) -> tuple[list[str], RequestsCookieJar]:
+def get_subjects_links(url: str) -> list[str]:
     page = requests.get(url)
     cookies = page.cookies
 
     soup = BeautifulSoup(page.content, "html.parser")
     subject_anchors = soup.find("table", class_="collegePanel").findAll("a")
-    return [f"{BASE_URL}{a['href']}" for a in subject_anchors], cookies
+    return [f"{BASE_URL}{a['href']}" for a in subject_anchors]
 
 
-def get_courses(url: str, cookies: str) -> pd.DataFrame:
+def get_courses(url: str) -> None:
     df = pd.read_html(url, attrs={"id": "sortableTable"})[0]
     df = clean_subjects(df)
-    # df.to_csv(path_or_buf=url[url.find("courseList") + 11: url.find(";")] + ".csv", index=False)
-    return df
+
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, "html.parser")
+    term_name = soup.find(text=re.compile(r"^Schedule for.*"))
+    term_name = term_name[term_name.find("(") + 1: term_name.find(")")]
+
+    file_name = join(os.getcwd(), term_name, f'{url[url.find("courseList") + 11: url.find(";")]}.csv')
+    print(file_name)
+    df.to_csv(path_or_buf=file_name, index=False)
+    # return df
 
 
-# ;jsessionid=3CCF59D7618B76817516A1B6A1B56141
+def save_subjects(school_url: str) -> None:
+    subject_urls = get_subjects_links(school_url)
+    threads = min(30, len(subject_urls))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        executor.map(get_courses, subject_urls)
+
+
+def save_subjects_per_school(term_url: str) -> None:
+    schools = get_school_links(term_url)
+    for school in schools:
+        save_subjects(school)
+
 
 def main():
     quarters = get_quarter_term_links(BASE_URL)
-    pprint(get_school_links(quarters[1]))
-    # subject_urls, cookie = get_subjects_links(SCHOOL_URL)
-    # print(get_courses(subject_urls[1], cookies=cookie))
-    # print(cookie.values())
-    # t0 = time.time()
-    # # for link in subject_urls:
-    # #     get_courses(f"{BASE_URL}{link}", cookie)
-    # threads = min(30, len(subject_urls))
-    # with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
-    #     executor.map(get_courses, subject_urls, repeat(cookie))
-    # t1 = time.time()
-    # print(f"{t1 - t0} seconds to scrape.")
+
+    t0 = time.time()
+    save_subjects_per_school(quarters[0])
+    t1 = time.time()
+    print(f"{t1 - t0} seconds to scrape.")
 
 
 if __name__ == "__main__":
