@@ -18,6 +18,14 @@ def clean_subjects(df: pd.DataFrame) -> pd.DataFrame:
     # Make TBD's nan
     df["Days / Time"] = df["Days / Time"].str.replace("TBD  TBD", str(np.nan), regex=True)
 
+    # Rename columns
+    df.columns = df.columns.str.lower().str.replace(" ", "_")
+    df.rename(columns={
+        "course_no.": "course_number",
+        "sec": "section",
+        "days_/_time": "meet_time"
+    }, inplace=True)
+
     # Get list of course meet dates
     df = split_start_end_time(df)
     return df
