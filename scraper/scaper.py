@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from app.database import engine
-from .cleaner import clean_subjects
+from cleaner import clean_subjects
 
 BASE_URL = "https://termmasterschedule.drexel.edu/"
 SCHOOL_URL = f"{BASE_URL}webtms_du/collegesSubjects/202115?collCode=CI"
@@ -49,9 +49,6 @@ def get_courses(url: str) -> None:
     df["term"] = int(term_name)
 
     df.to_sql("quarters", engine, if_exists="append", index=False)
-    # file_name = join(os.getcwd(), term_name, f'{url[url.find("courseList") + 11: url.find(";")]}.csv')
-    # df.to_csv(path_or_buf=file_name, index=False)
-    # return df
 
 
 def save_subjects(school_url: str) -> None:
@@ -82,8 +79,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # quarter = get_quarter_term_links(BASE_URL)
-    # fall = get_school_links(quarter[0])
-    # ci = get_subjects_links(fall[5])
-    # print(ci)
-    # print(get_courses(ci[0]))

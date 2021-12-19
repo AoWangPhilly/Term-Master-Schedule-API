@@ -20,7 +20,7 @@ def clean_subjects(df: pd.DataFrame) -> pd.DataFrame:
 
     # Get list of course meet dates
     df = split_start_end_time(df)
-    
+
     # Rename columns
     df.columns = df.columns.str.lower().str.replace(" ", "_")
     df.rename(columns={
@@ -37,5 +37,4 @@ def split_start_end_time(df: pd.DataFrame) -> pd.DataFrame:
     df["Days / Time"] = df["Days / Time"].map(
         lambda x: re.findall(r'[A-Z]+\s+\d{2}:\d{2}\s(?:am|pm)\s-\s\d{2}:\d{2}\s(?:am|pm)',
                              x) if x != 'nan' else [np.nan])
-    df["Days / Time"] = df["Days / Time"].map(lambda x: x[0] if len(x) == 1 else x)
     return df
