@@ -1,8 +1,10 @@
+from typing import List
+
 from fastapi import APIRouter, status, HTTPException
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
 
-from app import models
+from app import models, schemas
 from app.database import get_db
 
 router = APIRouter(
@@ -11,7 +13,7 @@ router = APIRouter(
 )
 
 
-@router.get("/{term}")
+@router.get("/{term}", response_model=List[schemas.Quarter])
 def get_quarter(term: int, db: Session = Depends(get_db)):
     quarter = db.query(models.Quarter).filter(models.Quarter.term == term).all()
     if not quarter:
