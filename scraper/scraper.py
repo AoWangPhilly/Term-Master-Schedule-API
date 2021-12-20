@@ -49,16 +49,13 @@ def get_courses(term: int, coll_code: str, url: str) -> None:
     """Reads in the subject's table and cleans it up"""
     df = pd.read_html(url, attrs={"id": "sortableTable"})[0]
     df = clean_subjects(df)
-
-    # # Previous idea of also grabbing course details
-    # details = get_all_course_details(url)
-    # df = df.merge(details, on="crn")
     df["term"] = term
     df["coll_code"] = coll_code
     df.to_sql("quarters", engine, if_exists="append", index=False)
 
 
-def get_course_details_urls(url) -> List[str]:
+def get_course_details_urls(url: str) -> List[str]:
+    """Takes all CRN links used to find details about the specific course"""
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
     a_tags = soup.find("table", id="sortableTable").findAll("a")
@@ -66,20 +63,17 @@ def get_course_details_urls(url) -> List[str]:
     return hrefs
 
 
-def get_course_details(url) -> dict[str, Any]:
+def get_course_details(url: str) -> dict[str, Any]:
+    """Grab crn, credits, max_enroll, enroll, course description, and prereqs of a course"""
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
 
     crn = int(soup.find("td", text=r"CRN").findNext("td").text)
     credits = float(soup.find("td", text="Credits").findNext("td").text.strip())
     max_enroll = int(soup.find("td", text="Max Enroll").findNext("td").text)
-    details = {"crn": crn,
-               "credits": credits,
-               "max_enroll": max_enroll}
-
     enroll = soup.find("td", text="Enroll").findNext("td").text.strip()
     if enroll == "CLOSED":
-        enroll = details["max_enroll"]
+        enroll = max_enroll
     else:
         enroll = int(enroll)
 
@@ -97,7 +91,8 @@ def get_course_details(url) -> dict[str, Any]:
     return details
 
 
-def get_all_course_details(url):
+def get_all_course_details(url: str) -> pd.DataFrame:
+    """Gets the course details of a subject page and create a dataframe"""
     urls = get_course_details_urls(url)
     output_df = pd.DataFrame(columns=["crn", "credits", "max_enroll", "enroll", "course_desc", "prereqs"])
 
@@ -107,6 +102,7 @@ def get_all_course_details(url):
 
 
 def save_subjects(school_url: str) -> None:
+    """Using threads to grab subjects in school concurrently to speed up scraping"""
     coll_code = school_url[school_url.find("collCode") + len("collCode") + 1:]
     term = int(school_url[school_url.find("collegesSubjects") + len("collegesSubjects") + 1: school_url.find(";")])
     urls = get_subjects_links(school_url)
@@ -117,6 +113,7 @@ def save_subjects(school_url: str) -> None:
 
 
 def save_subjects_per_term(url) -> None:
+    """Get all subjects in all 8 terms"""
     quarters = get_quarter_term_links(url=url)
     for quarter in quarters:
         schools = get_school_links(url=quarter)
