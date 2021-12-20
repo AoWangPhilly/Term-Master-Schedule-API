@@ -19,7 +19,8 @@ class Quarter(Base):
     coll_code = Column(String, nullable=False)
 
 
-class Class(Base):
+class Course(Base):
+    __tablename__ = "courses"
     subject_code = Column(String, nullable=False, primary_key=True)
     course_number = Column(String, nullable=False, primary_key=True)
     credit = Column(ARRAY(Integer), nullable=False)
