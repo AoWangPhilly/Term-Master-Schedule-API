@@ -1,3 +1,9 @@
+"""
+Subject DataFrame Cleaner
+-------------------------
+The module cleans the dataframe per subject. It'll drop rows with Nan, excess columns,
+and rename columns.
+"""
 import re
 
 import numpy as np
