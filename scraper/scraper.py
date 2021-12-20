@@ -40,26 +40,23 @@ def get_subjects_links(url: str) -> list[str]:
 def get_courses(term: int, coll_code: str, url: str) -> None:
     df = pd.read_html(url, attrs={"id": "sortableTable"})[0]
     df = clean_subjects(df)
-
     df["term"] = term
     df["coll_code"] = coll_code
-    # df["credit"] = df.apply(lambda x: CourseCatalog(x.subject_code, x.course_number).find_credit(), axis=1)
-    # df["course_desc"] = df.apply(lambda x: CourseCatalog(x.subject_code, x.course_number).find_course_description(),
-    #                              axis=1)
-    # df["prereq"] = df.apply(lambda x: CourseCatalog(x.subject_code, x.course_number).find_preqs(), axis=1)
-    # print(df.columns)
-    df.to_sql("quarters", engine, if_exists="append", index=False)
-    # return df
+    df.to_sql("quarters1", engine, if_exists="append", index=False)
 
 
+# ;jsessionid=69F46BFACD2486F0F33E1D5BF381D785
 def save_subjects(school_url: str) -> None:
     coll_code = school_url[school_url.find("collCode") + len("collCode") + 1:]
     term = int(school_url[school_url.find("collegesSubjects") + len("collegesSubjects") + 1: school_url.find(";")])
     urls = get_subjects_links(school_url)
-    threads = min(30, len(urls))
+    threads = min(MAX_THREADS, len(urls))
     args = ((term, coll_code, url) for url in urls)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+    # for arg in args:
+    #     print(arg)
+    #     get_courses(arg[0], arg[1], arg[2])
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         executor.map(lambda p: get_courses(*p), args)
 
 
@@ -80,14 +77,10 @@ def main():
     save_subjects_per_term()
     t1 = time.time()
     print(f"{t1 - t0} seconds to scrape.")
+    # 503.6655421257019 seconds to scrape.
+    # 26,903
 
-    # quarters = get_quarter_term_links(BASE_URL)
-    # fall = quarters[0]
-    #
-    # schools_in_fall = get_school_links(fall)
-    # ci = schools_in_fall[5]
-    # subjects_in_ci = get_subjects_links(ci)
-    # print(get_courses(202115, "CI", subjects_in_ci[0]))
+    # 26,406 26,409
 
 
 if __name__ == "__main__":
