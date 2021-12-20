@@ -2,7 +2,10 @@ import re
 from typing import Optional, List
 
 import requests
+import sqlalchemy as db
 from bs4 import BeautifulSoup
+
+from app.database import get_db, engine
 
 
 def get_url(subject_code: str, course_number: str) -> str:
@@ -37,8 +40,25 @@ class CourseCatalog:
         return preq
 
 
+def insert_course_into_db(subject_code, course_number):
+    ...
+
+
+def get_unique_courses():
+    connection = engine.connect()
+    metadata = db.MetaData()
+    quarters = db.Table("quarters", metadata, autoload=True, autoload_with=engine)
+    query = db.select([quarters.columns.subject_code, quarters.columns.course_number]).distinct()
+    return connection.execute(query).fetchall()
+
+
+def main():
+    db = get_db()
+
+
 if __name__ == "__main__":
-    course_catalog = CourseCatalog("HNRS", "T480")
-    print(course_catalog.find_course_description())
-    print(course_catalog.find_preqs())
-    print(course_catalog.find_credit())
+    print(get_unique_courses())
+    # course_catalog = CourseCatalog("HNRS", "T480")
+    # print(course_catalog.find_course_description())
+    # print(course_catalog.find_preqs())
+    # print(course_catalog.find_credit())
