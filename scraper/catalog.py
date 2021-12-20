@@ -1,11 +1,12 @@
+import concurrent.futures
 import re
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import requests
 import sqlalchemy as db
 from bs4 import BeautifulSoup
 
-from app.database import get_db, engine
+from app.database import engine
 
 
 def get_url(subject_code: str, course_number: str) -> str:
@@ -40,11 +41,12 @@ class CourseCatalog:
         return preq
 
 
-def insert_course_into_db(subject_code, course_number):
-    ...
+def get_course_info(subject_code: str, course_number: str):
+    course_catalog = CourseCatalog(subject_code=subject_code, course_number=course_number)
+    return course_catalog.find_credit(), course_catalog.find_course_description(), course_catalog.find_preqs()
 
 
-def get_unique_courses():
+def get_unique_courses() -> List[Tuple[str, str]]:
     connection = engine.connect()
     metadata = db.MetaData()
     quarters = db.Table("quarters", metadata, autoload=True, autoload_with=engine)
@@ -52,13 +54,23 @@ def get_unique_courses():
     return connection.execute(query).fetchall()
 
 
-def main():
-    db = get_db()
+def insert_course_data_to_db(subject_code: str, course_number: str):
+    credit, course_desc, prereq = get_course_info(subject_code, course_number)
+    connection = engine.connect()
+    metadata = db.MetaData()
+    courses = db.Table("courses", metadata, autoload=True, autoload_with=engine)
+    query = db.insert(courses).values(subject_code=subject_code, course_number=course_number, credit=credit,
+                                      course_desc=course_desc, prereq=prereq)
+    connection.execute(query)
+
+
+def get_all_course_info() -> None:
+    courses = get_unique_courses()
+    threads = min(30, len(courses))
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+        executor.map(lambda p: insert_course_data_to_db(*p), courses)
 
 
 if __name__ == "__main__":
-    print(get_unique_courses())
-    # course_catalog = CourseCatalog("HNRS", "T480")
-    # print(course_catalog.find_course_description())
-    # print(course_catalog.find_preqs())
-    # print(course_catalog.find_credit())
+    get_all_course_info()
