@@ -17,12 +17,3 @@ class Quarter(Base):
     meet_time = Column(ARRAY(String))
     instructor = Column(String, nullable=False)
     coll_code = Column(String, nullable=False)
-
-
-class Course(Base):
-    __tablename__ = "courses"
-    subject_code = Column(String, nullable=False, primary_key=True)
-    course_number = Column(String, nullable=False, primary_key=True)
-    credit = Column(ARRAY(Integer), nullable=False)
-    course_desc = Column(String, nullable=False)
-    prereq = Column(String)
