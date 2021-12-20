@@ -1,3 +1,12 @@
+"""
+Course Catalog Scraper
+---------------------
+The class takes in a subject code and course number and finds the course's
+description, number of credits, and prerequisites.
+
+**Note**
+- No longer in use, since it doesn't provide all courses
+"""
 import re
 from typing import Optional, List, Tuple
 
@@ -9,6 +18,7 @@ from app.database import engine
 
 
 def get_url(subject_code: str, course_number: str) -> str:
+    """Formats the URL for the request"""
     return f"http://catalog.drexel.edu/search/?P={subject_code}%20{course_number}"
 
 
